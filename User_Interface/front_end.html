@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Datestamp — Handwritten Date Reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1c1a17;
+    --paper: #f4efe6;
+    --paper-deep: #e9e2d4;
+    --accent: #c2410c;
+    --accent-soft: #f0d9c8;
+    --line: #d6cdb9;
+    --muted: #8a8170;
+    --ok: #4d7c4d;
+    --err: #b3261e;
+    --radius: 4px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Spline Sans Mono', monospace;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(214,205,185,0.5) 31px, rgba(214,205,185,0.5) 32px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px 80px;
+  }
+
+  /* ---- header ---- */
+  header {
+    width: 100%;
+    max-width: 620px;
+    margin-bottom: 40px;
+  }
+
+  .kicker {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .kicker::before {
+    content: "";
+    width: 28px; height: 1px;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: clamp(2.4rem, 6vw, 3.4rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .sub {
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 440px;
+  }
+
+  /* ---- card ---- */
+  .card {
+    width: 100%;
+    max-width: 620px;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: 7px 7px 0 var(--ink);
+    overflow: hidden;
+  }
+
+  .card-tab {
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 9px 18px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .card-tab span:last-child { color: var(--accent-soft); }
+
+  .card-body { padding: 26px; }
+
+  /* ---- dropzone ---- */
+  .dropzone {
+    border: 2px dashed var(--line);
+    border-radius: var(--radius);
+    background: var(--paper-deep);
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .18s ease, background .18s ease, transform .12s ease;
+    position: relative;
+  }
+  .dropzone:hover { border-color: var(--accent); background: #ede6d8; }
+  .dropzone.drag {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    transform: scale(1.01);
+  }
+
+  .dz-icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 18px;
+    border: 1.5px solid var(--ink);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--paper);
+    transition: transform .2s ease;
+  }
+  .dropzone:hover .dz-icon { transform: translateY(-3px) rotate(-6deg); }
+  .dz-icon svg { width: 24px; height: 24px; stroke: var(--accent); }
+
+  .dz-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .dz-hint { font-size: 12px; color: var(--muted); }
+  .dz-or {
+    margin: 16px 0 4px;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--line);
+  }
+
+  .browse-btn {
+    margin-top: 8px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 11px 22px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  .browse-btn:hover { background: var(--accent); }
+
+  /* ---- preview ---- */
+  .preview { display: none; }
+  .preview.show { display: block; }
+
+  .preview-frame {
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--paper-deep);
+    padding: 12px;
+    position: relative;
+  }
+  .preview-frame img {
+    width: 100%;
+    display: block;
+    border-radius: 2px;
+    max-height: 280px;
+    object-fit: contain;
+  }
+  .file-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 10px;
+    padding: 0 2px;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .btn {
+    flex: 1;
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 13px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    border: 1.5px solid var(--ink);
+    transition: all .15s ease;
+  }
+  .btn-primary { background: var(--accent); color: var(--paper); }
+  .btn-primary:hover { background: var(--ink); }
+  .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--ink); }
+  .btn-ghost:hover { background: var(--ink); color: var(--paper); }
+
+  /* ---- result ---- */
+  .result {
+    display: none;
+    margin-top: 22px;
+    border-top: 1.5px dashed var(--line);
+    padding-top: 22px;
+  }
+  .result.show { display: block; animation: rise .35s ease; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .result-date {
+    font-family: 'Fraunces', serif;
+    font-size: 2.6rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ok);
+  }
+  .result-date.unparsed { color: var(--accent); }
+  .result-raw {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .result-raw b { color: var(--ink); font-weight: 500; }
+
+  /* error message */
+  .error-box {
+    display: none;
+    margin-top: 18px;
+    border: 1.5px solid var(--err);
+    border-radius: var(--radius);
+    background: #f7e4e2;
+    color: var(--err);
+    font-size: 12px;
+    padding: 12px 14px;
+    line-height: 1.5;
+  }
+  .error-box.show { display: block; }
+
+  /* spinner */
+  .spinner {
+    display: none;
+    margin: 6px auto 0;
+    width: 22px; height: 22px;
+    border: 2.5px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  .spinner.show { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="kicker">Optical Date Recognition</div>
+    <h1>Read Any <em>Handwritten</em> Date.</h1>
+    <p class="sub">Snap a photo of a date written on paper, drop it below, and it will be returned in a clean <b>YYYY-MM-DD</b> format.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-tab">
+      <span>Input&nbsp;/&nbsp;Image</span>
+      <span>● ready</span>
+    </div>
+    <div class="card-body">
+
+      <!-- DROPZONE -->
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4M12 4l-4 4M12 4l4 4"/>
+            <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
+          </svg>
+        </div>
+        <div class="dz-title">Drop your photo here</div>
+        <div class="dz-hint">PNG or JPG · a single clear date works best</div>
+        <div class="dz-or">— OR —</div>
+        <button class="browse-btn" id="browseBtn" type="button">Browse files</button>
+        <!-- capture="environment" opens the rear camera directly on phones -->
+        <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+      </div>
+
+      <!-- PREVIEW -->
+      <div class="preview" id="preview">
+        <div class="preview-frame">
+          <img id="previewImg" alt="uploaded date">
+        </div>
+        <div class="file-meta">
+          <span id="fileName">—</span>
+          <span id="fileSize">—</span>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" id="resetBtn" type="button">Choose another</button>
+          <button class="btn btn-primary" id="readBtn" type="button">Read the date</button>
+        </div>
+
+        <!-- RESULT -->
+        <div class="result" id="result">
+          <div class="result-label">Detected date</div>
+          <div class="result-date" id="resultDate">—</div>
+          <div class="result-raw">Raw model output: <b id="resultRaw">—</b></div>
+        </div>
+
+        <!-- ERROR -->
+        <div class="error-box" id="errorBox"></div>
+
+        <div class="spinner" id="spinner"></div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  // ====== CONFIG ======
+  // URL of the FastAPI server. Change if you run it on a different host/port.
+  const API_URL = "http://127.0.0.1:8000/predict";
+
+  const dropzone   = document.getElementById('dropzone');
+  const fileInput  = document.getElementById('fileInput');
+  const browseBtn  = document.getElementById('browseBtn');
+  const preview    = document.getElementById('preview');
+  const previewImg = document.getElementById('previewImg');
+  const fileName   = document.getElementById('fileName');
+  const fileSize   = document.getElementById('fileSize');
+  const resetBtn   = document.getElementById('resetBtn');
+  const readBtn    = document.getElementById('readBtn');
+  const result     = document.getElementById('result');
+  const resultDate = document.getElementById('resultDate');
+  const resultRaw  = document.getElementById('resultRaw');
+  const errorBox   = document.getElementById('errorBox');
+  const spinner    = document.getElementById('spinner');
+
+  // holds the actual File object so we can send it to the server
+  let selectedFile = null;
+
+  // open file picker
+  browseBtn.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  // drag + drop
+  ['dragenter','dragover'].forEach(ev =>
+    dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev =>
+    dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+  dropzone.addEventListener('drop', e => {
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) handleFile(f);
+  });
+
+  function handleFile(file) {
+    if (!file.type.startsWith('image/')) { alert('Please choose an image file.'); return; }
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      previewImg.src = ev.target.result;
+      fileName.textContent = file.name.length > 28 ? file.name.slice(0,25)+'…' : file.name;
+      fileSize.textContent = (file.size/1024).toFixed(0) + ' KB';
+      dropzone.style.display = 'none';
+      preview.classList.add('show');
+      result.classList.remove('show');
+      errorBox.classList.remove('show');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  resetBtn.addEventListener('click', () => {
+    preview.classList.remove('show');
+    result.classList.remove('show');
+    errorBox.classList.remove('show');
+    dropzone.style.display = 'block';
+    fileInput.value = '';
+    selectedFile = null;
+  });
+
+  // ====== REAL MODEL CALL ======
+  readBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    result.classList.remove('show');
+    errorBox.classList.remove('show');
+    spinner.classList.add('show');
+    readBtn.disabled = true;
+
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      const response = await fetch(API_URL, { method: 'POST', body: formData });
+      if (!response.ok) throw new Error('Server responded with status ' + response.status);
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      // fill in the result
+      resultDate.textContent = data.date;
+      resultRaw.textContent  = data.raw || '(empty)';
+      // green if the model produced a clean YYYY-MM-DD, accent colour if not
+      resultDate.classList.toggle('unparsed', !data.normalized);
+      result.classList.add('show');
+
+    } catch (err) {
+      errorBox.textContent = 'Could not read the date: ' + err.message +
+        '. Make sure the server is running at ' + API_URL + '.';
+      errorBox.classList.add('show');
+    } finally {
+      spinner.classList.remove('show');
+      readBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
