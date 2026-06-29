@@ -1,0 +1,38 @@
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# Generated datasets and local model artifacts
+data/
+output/
+outputs/
+fonts/
+checkpoints/
+models/
+*.zip
+*.tsv
+*.csv
+*.log
+runs/
+wandb/
+
+# Python/runtime state
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local extracted notebook/script experiments
+crnn_model.py
+infer_crnn.py
+ocr_dataset.py
+train_crnn.py
+date_scan_converter_colab.ipynb
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/

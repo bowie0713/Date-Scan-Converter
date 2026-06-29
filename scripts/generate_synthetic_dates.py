@@ -9,7 +9,7 @@ import requests
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 
-#download fonts
+# Download fonts.
 
 FONT_URLS = {
     "Caveat": (
@@ -49,7 +49,7 @@ def download_fonts(output_dir: str = "fonts") -> list[str]:
             resp.raise_for_status()
             with open(path, "wb") as f:
                 f.write(resp.content)
-            print(f"    Saved → {path}")
+            print(f"    Saved -> {path}")
             paths.append(path)
         except Exception as e:
             print(f"    WARNING: Could not download '{name}': {e}")
@@ -62,7 +62,7 @@ def download_fonts(output_dir: str = "fonts") -> list[str]:
     return paths
 
 
-#generate date string
+# Generate date strings.
 
 def _no_pad(code: str) -> str:
     """Return OS-appropriate no-zero-padding format code."""
@@ -107,7 +107,7 @@ def random_date_string() -> str:
     return random_date().strftime(fmt)
 
 
-#generate image
+# Generate images.
 INK_PALETTES = [
     # Dark blue-black ballpoint
     ((0, 30),  (0, 30),  (40, 110)),
@@ -175,7 +175,7 @@ def render_date(
     return img
 
 
-#augment image
+# Augment images.
 
 def augment(img: Image.Image) -> Image.Image:
     """Apply realistic handwriting-scan augmentations."""
@@ -213,7 +213,7 @@ def augment(img: Image.Image) -> Image.Image:
     return img
 
 
-#generate dataset 
+# Generate datasets.
 
 def generate_dataset(
     n: int          = 500,

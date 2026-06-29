@@ -8,7 +8,9 @@
 #     (regularization fixes that produced the 75-epoch model).
 # ============================================================
 import io
+import os
 from datetime import datetime
+from pathlib import Path
 from typing import List, Dict
 
 import torch
@@ -19,7 +21,7 @@ from PIL import Image
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
-CHECKPOINT_PATH = "best_crnn_30k_75ep_dylan.pt"
+CHECKPOINT_PATH = Path(os.getenv("MODEL_CHECKPOINT", "models/best_crnn_30k_75ep_dylan.pt"))
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -148,6 +150,12 @@ def normalize_date_string(text):
 # ============================================================
 # LOAD MODEL ONCE AT STARTUP
 # ============================================================
+if not CHECKPOINT_PATH.exists():
+    raise FileNotFoundError(
+        f"Model checkpoint not found at {CHECKPOINT_PATH}. "
+        "Set MODEL_CHECKPOINT=/path/to/best_crnn_30k_75ep_dylan.pt or place the file in models/."
+    )
+
 print(f"Loading checkpoint from {CHECKPOINT_PATH} ...")
 checkpoint = torch.load(CHECKPOINT_PATH, map_location=DEVICE)
 VOCAB = OCRWordVocabulary()
