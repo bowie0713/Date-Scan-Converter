@@ -111,3 +111,6 @@ Example response:
 - Do not commit `.pt`, `.pth`, `.ckpt`, generated images, zip files, or local dataset folders.
 - If a model checkpoint needs to be shared, use GitHub Releases, cloud storage, or Git LFS instead of committing it directly.
 - Keep notebook outputs that document useful results, but clear large cell outputs before committing if the notebook grows substantially.
+
+## Other Note
+- Please store the trained model in a new folder named `models`
