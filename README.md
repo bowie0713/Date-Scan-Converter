@@ -81,6 +81,12 @@ Then open `app/front_end.html` in a browser. The UI sends uploads to:
 http://127.0.0.1:8000/predict
 ```
 
+Or to open a separate terminal window and run the following command
+
+```text
+curl http://127.0.0.1:8000/
+```
+
 ## API
 
 Health check:
